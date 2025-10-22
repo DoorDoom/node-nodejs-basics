@@ -8,7 +8,6 @@ const copy = async () => {
       recursive: true,
     });
   } catch (error) {
-    console.log(error);
     throw new Error("FS operation failed");
   }
 };
