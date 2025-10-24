@@ -1,5 +1,4 @@
 import { pipeline } from "node:stream/promises";
-import { createReadStream } from "node:fs";
 import { stdin, stdout } from "node:process";
 import { Transform } from "node:stream";
 
