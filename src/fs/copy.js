@@ -1,5 +1,15 @@
+import { cp } from "node:fs/promises";
+
 const copy = async () => {
-  // Write your code here
+  try {
+    await cp("./src/fs/files", "./src/fs/files_copy", {
+      force: false,
+      errorOnExist: true,
+      recursive: true,
+    });
+  } catch (error) {
+    throw new Error("FS operation failed");
+  }
 };
 
 await copy();
