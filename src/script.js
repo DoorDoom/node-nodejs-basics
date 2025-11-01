@@ -9,8 +9,11 @@ import {
   mkdir as md,
   rename,
   rm,
+  readFile,
 } from "node:fs/promises";
-import { homedir } from "node:os";
+import { homedir, EOL, cpus, userInfo, arch } from "node:os";
+import { createHmac } from "node:crypto";
+import { createGzip, createUnzip, unzip } from "node:zlib";
 
 let name =
   process.argv
@@ -58,6 +61,18 @@ process.stdin.on("data", async (chunk) => {
       case "mkdir":
         await createDirectory(args[0]);
         break;
+      case "hash":
+        await createHash(args[0]);
+        break;
+      case "compress":
+        await compressFile(args[0], args[1]);
+        break;
+      case "decompress":
+        await decompressFile(args[0], args[1]);
+        break;
+      case "os":
+        getOS(args[0]);
+        break;
       case "exit":
         process.exit(0);
       default:
@@ -104,6 +119,14 @@ const printContent = async (targetPath) => {
   });
 };
 
+const createHash = async (targetPath) => {
+  const contents = await readFile(targetPath, {
+    encoding: "utf8",
+  });
+  const hash = createHmac("sha256", "secret").update(contents).digest("hex");
+  console.log(hash);
+};
+
 const createFile = async (targetPath) => {
   await writeFile(targetPath, "", { flag: "wx+" });
 };
@@ -145,10 +168,51 @@ const createDirectory = async (targetPath) => {
   await md(targetPath);
 };
 
+const compressFile = async (sourcePath, targetPath) => {
+  const gzip = createGzip();
+  const source = createReadStream(sourcePath);
+  const destination = createWriteStream(targetPath);
+  await pipeline(source, gzip, destination);
+};
+
+const decompressFile = async (sourcePath, targetPath) => {
+  const unzip = createUnzip();
+  const source = createReadStream(sourcePath);
+  const destination = createWriteStream(targetPath);
+  await pipeline(source, unzip, destination);
+};
+
 const findPath = (targetPath) => {
   chdir(
     path.isAbsolute(targetPath)
       ? targetPath
       : path.resolve(process.cwd(), targetPath)
   );
+};
+
+const getOS = (command) => {
+  switch (command) {
+    case "--EOL":
+      console.log(`EOL: ${EOL}`);
+      break;
+    case "--cpus":
+      console.log(`Amount of cpus: ${cpus().length}`);
+      console.table(
+        cpus().map((val) => {
+          return { model: val.model, speed: val.speed };
+        })
+      );
+      break;
+    case "--homedir":
+      console.log(`Homedir: ${homedir()}`);
+      break;
+    case "--username":
+      console.log(`username: ${userInfo().username}`);
+      break;
+    case "--architecture":
+      console.log(`architecture: ${arch()}`);
+      break;
+    default:
+      console.log("Invalid input");
+  }
 };
